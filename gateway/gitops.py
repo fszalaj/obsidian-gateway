@@ -28,7 +28,7 @@ def status(vault: Vault) -> dict:
 
 def commit(vault: Vault, message: str, author: tuple[str, str] | None = None) -> dict:
     if not message.strip():
-        raise ValueError("empty commit message")
+        raise ValueError("bad_message: empty commit message")
     if not message.startswith("wiki:"):
         message = f"wiki: {message}"
 

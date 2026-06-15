@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import functools
+import inspect
 import os
 
+from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_access_token
 
 from . import acl, edits, gitops, links
@@ -11,6 +14,43 @@ from .vaults import Vault
 from .writes import atomic_write
 
 MAX_NOTE_BYTES = 10 * 1024 * 1024  # read_note guard against a pathological huge file
+
+# Only the gateway's own deliberate, client-facing failures (by message prefix) are
+# surfaced as ToolError when details are masked; unexpected OS/git errors stay hidden.
+_EXPECTED_PREFIXES = (
+    "not_found:", "exists:", "too_large:", "heading_not_found:", "bad_position:",
+    "bad_message:", "path_escape:", "path_excluded:", "path_hidden:", "not_a_note:",
+    "ambiguous_old_name:", "new_name_taken:", "frontmatter_",
+    "vault_forbidden:", "write_forbidden:",
+)
+_EXPECTED_EXC = (FileNotFoundError, FileExistsError, ValueError, PermissionError, acl.AccessDenied)
+
+
+def _expected_to_tool_error(fn):
+    if inspect.iscoroutinefunction(fn):
+        @functools.wraps(fn)
+        async def awrap(*a, **k):
+            try:
+                return await fn(*a, **k)
+            except ToolError:
+                raise
+            except _EXPECTED_EXC as e:
+                if str(e).startswith(_EXPECTED_PREFIXES):
+                    raise ToolError(str(e)) from e
+                raise
+        return awrap
+
+    @functools.wraps(fn)
+    def wrap(*a, **k):
+        try:
+            return fn(*a, **k)
+        except ToolError:
+            raise
+        except _EXPECTED_EXC as e:
+            if str(e).startswith(_EXPECTED_PREFIXES):
+                raise ToolError(str(e)) from e
+            raise
+    return wrap
 
 
 def _scopes() -> list[str]:
@@ -25,6 +65,9 @@ def _sub() -> str:
 
 def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, local: bool = False) -> None:
     authors = authors or {}
+
+    def tool(fn):  # @tool = @mcp.tool, with the gateway's expected errors mapped to ToolError
+        return mcp.tool(_expected_to_tool_error(fn))
 
     def _author() -> tuple[str, str]:
         if local:
@@ -53,7 +96,7 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             raise acl.AccessDenied(f"vault_forbidden: {name}")
         return v
 
-    @mcp.tool
+    @tool
     def list_vaults() -> list[dict]:
         """List the vaults available here, each with a short description."""
         allowed = set(vaults) if local else acl.allowed_vaults(_scopes())
@@ -63,13 +106,13 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             if n in allowed
         ]
 
-    @mcp.tool
+    @tool
     def list_notes(vault: str, subdir: str | None = None, limit: int = 1000) -> list[str]:
         """List markdown note paths (vault-relative) within a vault."""
         v = _vault(vault, write=False)
         return v.list_markdown(subdir=subdir, limit=max(1, min(limit, 5000)))
 
-    @mcp.tool
+    @tool
     def read_note(vault: str, path: str) -> str:
         """Read one markdown note's raw content."""
         v = _vault(vault, write=False)
@@ -80,31 +123,31 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             raise ValueError(f"too_large: {path} is over {MAX_NOTE_BYTES // (1024 * 1024)} MiB")
         return target.read_text(encoding="utf-8")
 
-    @mcp.tool
+    @tool
     def search(vault: str, query: str, regex: bool = False, limit: int = 50) -> list[dict]:
         """Search a vault with ripgrep — literal by default, regex when regex=true."""
         v = _vault(vault, write=False)
         return ripgrep(v.path, query, regex=regex, limit=limit)
 
-    @mcp.tool
+    @tool
     def backlinks(vault: str, note: str, limit: int = 200) -> list[dict]:
         """Find notes that [[wikilink]] to the given note."""
         v = _vault(vault, write=False)
         return links.backlinks(v.path, note, limit=limit)
 
-    @mcp.tool
+    @tool
     def list_tags(vault: str) -> list[dict]:
         """List inline #tags in a vault with occurrence counts."""
         v = _vault(vault, write=False)
         return tagmod.list_tags(v.path)
 
-    @mcp.tool
+    @tool
     def git_status(vault: str) -> dict:
         """Show uncommitted changes scoped to the vault's subdir."""
         v = _vault(vault, write=False)
         return gitops.status(v)
 
-    @mcp.tool
+    @tool
     def write_note(
         vault: str,
         path: str,
@@ -121,13 +164,13 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             result["commit"] = gitops.commit(v, message or f"update {path}", author=_author())
         return result
 
-    @mcp.tool
+    @tool
     def git_commit(vault: str, message: str) -> dict:
         """Commit the vault's pending changes (scoped to its subdir)."""
         v = _vault(vault, write=True)
         return gitops.commit(v, message, author=_author())
 
-    @mcp.tool
+    @tool
     def patch_note(
         vault: str,
         path: str,
@@ -152,7 +195,7 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             result["commit"] = gitops.commit(v, message or f"update {path}", author=_author())
         return result
 
-    @mcp.tool
+    @tool
     def patch_frontmatter(
         vault: str,
         path: str,
@@ -173,7 +216,7 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             result["commit"] = gitops.commit(v, message or f"update frontmatter {path}", author=_author())
         return result
 
-    @mcp.tool
+    @tool
     def delete_note(
         vault: str,
         path: str,
@@ -191,7 +234,7 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             result["commit"] = gitops.commit(v, message or f"delete {path}", author=_author())
         return result
 
-    @mcp.tool
+    @tool
     def rename_note(
         vault: str,
         old_path: str,
@@ -252,7 +295,7 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
             result["commit"] = gitops.commit(v, message or f"rename {old_path} -> {new_path}", author=_author())
         return result
 
-    @mcp.tool
+    @tool
     def query_notes(
         vault: str,
         type: str | None = None,

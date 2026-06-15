@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
 
 from fastmcp import FastMCP
@@ -24,7 +25,7 @@ def build_server() -> FastMCP:
         for token, info in registry.items()
     }
     authors = {info.sub: info.email for info in registry.values()}
-    mcp = FastMCP("obsidian-gateway", auth=StaticTokenVerifier(tokens=token_map))
+    mcp = FastMCP("obsidian-gateway", auth=StaticTokenVerifier(tokens=token_map), mask_error_details=True)
     register_tools(mcp, vaults, authors)
     return mcp
 
@@ -49,7 +50,7 @@ def build_local_server(vault_path: str) -> FastMCP:
     subdir = "." if root == p else p.relative_to(root).as_posix()
     name = p.name
     vault = Vault(name=name, path=p, repo_root=root, subdir=subdir, description=f"local vault: {name}")
-    mcp = FastMCP("obsidian-gateway")
+    mcp = FastMCP("obsidian-gateway", mask_error_details=False)
     register_tools(mcp, {name: vault}, authors=None, local=True)
     return mcp
 
@@ -57,9 +58,17 @@ def build_local_server(vault_path: str) -> FastMCP:
 def main() -> None:
     ap = argparse.ArgumentParser(prog="obsidian-gateway")
     ap.add_argument("--vault", help="serve THIS single vault locally over stdio (no auth)")
+    ap.add_argument("--local", action="store_true", help="auto-detect the cwd's vault and serve it locally over stdio")
     args, _ = ap.parse_known_args()
 
     vault = args.vault or os.environ.get("OBSIDIAN_GATEWAY_VAULT")
+    if not vault and (args.local or os.environ.get("OBSIDIAN_GATEWAY_LOCAL", "").strip().lower() in {"1", "true", "yes", "on"}):
+        from .detect import VaultDetectionError, detect_vault
+        try:
+            vault = str(detect_vault(Path.cwd()))
+        except VaultDetectionError as e:
+            print(f"obsidian-gateway: {e}", file=sys.stderr)
+            raise SystemExit(2)
     if vault:
         build_local_server(vault).run(transport="stdio")
         return
