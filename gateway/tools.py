@@ -9,6 +9,7 @@ from fastmcp.server.dependencies import get_access_token
 
 from . import acl, edits, gitops, links
 from . import tags as tagmod
+from .locks import write_lock
 from .search import ripgrep
 from .vaults import Vault
 from .writes import atomic_write
@@ -68,6 +69,22 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
 
     def tool(fn):  # @tool = @mcp.tool, with the gateway's expected errors mapped to ToolError
         return mcp.tool(_expected_to_tool_error(fn))
+
+    def locked(fn):
+        # Serialize a mutating op + its commit per repo (flock, cross-thread/process),
+        # so read-modify-write tools and concurrent commits cannot race. Taken once here;
+        # the inner gitops.commit must NOT re-lock (flock is non-reentrant).
+        @functools.wraps(fn)
+        def wrap(vault, *a, **k):
+            v = vaults.get(vault)
+            if v is None:
+                return fn(vault, *a, **k)  # let the tool raise the opaque forbidden error
+            with write_lock(v.repo_root):
+                return fn(vault, *a, **k)
+        return wrap
+
+    def wtool(fn):  # mutating tool: lock-wrapped, then error-mapped + registered
+        return mcp.tool(_expected_to_tool_error(locked(fn)))
 
     def _author() -> tuple[str, str]:
         if local:
@@ -147,7 +164,7 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
         v = _vault(vault, write=False)
         return gitops.status(v)
 
-    @tool
+    @wtool
     def write_note(
         vault: str,
         path: str,
@@ -161,16 +178,16 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
         atomic_write(target, content)
         result = {"vault": vault, "written": path, "sub": _sub()}
         if commit:
-            result["commit"] = gitops.commit(v, message or f"update {path}", author=_author())
+            result["commit"] = gitops.commit(v, message or f"update {path}", author=_author(), paths=[target.relative_to(v.repo_root).as_posix()])
         return result
 
-    @tool
+    @wtool
     def git_commit(vault: str, message: str) -> dict:
         """Commit the vault's pending changes (scoped to its subdir)."""
         v = _vault(vault, write=True)
         return gitops.commit(v, message, author=_author())
 
-    @tool
+    @wtool
     def patch_note(
         vault: str,
         path: str,
@@ -192,10 +209,10 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
         atomic_write(target, new)
         result = {"vault": vault, "patched": path}
         if commit:
-            result["commit"] = gitops.commit(v, message or f"update {path}", author=_author())
+            result["commit"] = gitops.commit(v, message or f"update {path}", author=_author(), paths=[target.relative_to(v.repo_root).as_posix()])
         return result
 
-    @tool
+    @wtool
     def patch_frontmatter(
         vault: str,
         path: str,
@@ -213,10 +230,10 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
         atomic_write(target, new)
         result = {"vault": vault, "frontmatter_updated": sorted(updates)}
         if commit:
-            result["commit"] = gitops.commit(v, message or f"update frontmatter {path}", author=_author())
+            result["commit"] = gitops.commit(v, message or f"update frontmatter {path}", author=_author(), paths=[target.relative_to(v.repo_root).as_posix()])
         return result
 
-    @tool
+    @wtool
     def delete_note(
         vault: str,
         path: str,
@@ -231,10 +248,10 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
         target.unlink()
         result = {"vault": vault, "deleted": path}
         if commit:
-            result["commit"] = gitops.commit(v, message or f"delete {path}", author=_author())
+            result["commit"] = gitops.commit(v, message or f"delete {path}", author=_author(), paths=[target.relative_to(v.repo_root).as_posix()])
         return result
 
-    @tool
+    @wtool
     def rename_note(
         vault: str,
         old_path: str,
@@ -292,7 +309,9 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
 
         result = {"vault": vault, "renamed": f"{old_path} -> {new_path}", "links_updated": total, "files": touched}
         if commit:
-            result["commit"] = gitops.commit(v, message or f"rename {old_path} -> {new_path}", author=_author())
+            commit_paths = {src.relative_to(v.repo_root).as_posix(), dst.relative_to(v.repo_root).as_posix()}
+            commit_paths.update((v.path / t).relative_to(v.repo_root).as_posix() for t in touched)
+            result["commit"] = gitops.commit(v, message or f"rename {old_path} -> {new_path}", author=_author(), paths=sorted(commit_paths))
         return result
 
     @tool

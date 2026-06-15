@@ -26,14 +26,19 @@ def status(vault: Vault) -> dict:
     return {"vault": vault.name, "dirty": bool(changes), "changes": changes}
 
 
-def commit(vault: Vault, message: str, author: tuple[str, str] | None = None) -> dict:
+def commit(vault: Vault, message: str, author: tuple[str, str] | None = None,
+           paths: list[str] | None = None) -> dict:
     if not message.strip():
         raise ValueError("bad_message: empty commit message")
     if not message.startswith("wiki:"):
         message = f"wiki: {message}"
 
-    _git(vault.repo_root, "add", "--", vault.subdir)
-    staged = _git(vault.repo_root, "diff", "--cached", "--name-only", "--", vault.subdir)
+    # Scope to the exact paths this op touched when given, else the whole vault subdir.
+    # Path-scoping stops a commit=True op from sweeping a concurrent op's still-
+    # uncommitted change into (and mis-attributing) this commit.
+    pathspec = list(paths) if paths else [vault.subdir]
+    _git(vault.repo_root, "add", "--", *pathspec)
+    staged = _git(vault.repo_root, "diff", "--cached", "--name-only", "--", *pathspec)
     if not staged.strip():
         return {"vault": vault.name, "committed": False, "reason": "nothing to commit"}
 
@@ -54,7 +59,7 @@ def commit(vault: Vault, message: str, author: tuple[str, str] | None = None) ->
             "GIT_COMMITTER_NAME": name,
             "GIT_COMMITTER_EMAIL": email,
         }
-    _git(vault.repo_root, "commit", "-m", message, "--", vault.subdir, env=env)
+    _git(vault.repo_root, "commit", "-m", message, "--", *pathspec, env=env)
     sha = _git(vault.repo_root, "rev-parse", "HEAD").strip()
     result = {"vault": vault.name, "committed": True, "sha": sha, "message": message}
     if author and author[0]:
