@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import inspect
 import os
 
 from fastmcp.exceptions import ToolError
@@ -18,24 +19,38 @@ MAX_NOTE_BYTES = 10 * 1024 * 1024  # read_note guard against a pathological huge
 # surfaced as ToolError when details are masked; unexpected OS/git errors stay hidden.
 _EXPECTED_PREFIXES = (
     "not_found:", "exists:", "too_large:", "heading_not_found:", "bad_position:",
-    "path_escape:", "path_excluded:", "path_hidden:", "not_a_note:",
+    "bad_message:", "path_escape:", "path_excluded:", "path_hidden:", "not_a_note:",
     "ambiguous_old_name:", "new_name_taken:", "frontmatter_",
     "vault_forbidden:", "write_forbidden:",
 )
+_EXPECTED_EXC = (FileNotFoundError, FileExistsError, ValueError, PermissionError, acl.AccessDenied)
 
 
 def _expected_to_tool_error(fn):
+    if inspect.iscoroutinefunction(fn):
+        @functools.wraps(fn)
+        async def awrap(*a, **k):
+            try:
+                return await fn(*a, **k)
+            except ToolError:
+                raise
+            except _EXPECTED_EXC as e:
+                if str(e).startswith(_EXPECTED_PREFIXES):
+                    raise ToolError(str(e)) from e
+                raise
+        return awrap
+
     @functools.wraps(fn)
-    def wrapper(*a, **k):
+    def wrap(*a, **k):
         try:
             return fn(*a, **k)
         except ToolError:
             raise
-        except (FileNotFoundError, FileExistsError, ValueError, PermissionError, acl.AccessDenied) as e:
+        except _EXPECTED_EXC as e:
             if str(e).startswith(_EXPECTED_PREFIXES):
                 raise ToolError(str(e)) from e
             raise
-    return wrapper
+    return wrap
 
 
 def _scopes() -> list[str]:

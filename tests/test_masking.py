@@ -10,6 +10,7 @@ def test_expected_failures_become_toolerror():
         FileNotFoundError("not_found: x"),
         FileExistsError("exists: x"),
         ValueError("too_large: x"),
+        ValueError("bad_message: empty commit message"),
         ValueError("frontmatter_unparseable: x"),
         PermissionError("path_escape: x"),
         acl.AccessDenied("vault_forbidden: x"),
