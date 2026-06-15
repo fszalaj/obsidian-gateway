@@ -24,7 +24,7 @@ def build_server() -> FastMCP:
         for token, info in registry.items()
     }
     authors = {info.sub: info.email for info in registry.values()}
-    mcp = FastMCP("obsidian-gateway", auth=StaticTokenVerifier(tokens=token_map))
+    mcp = FastMCP("obsidian-gateway", auth=StaticTokenVerifier(tokens=token_map), mask_error_details=True)
     register_tools(mcp, vaults, authors)
     return mcp
 
@@ -49,7 +49,7 @@ def build_local_server(vault_path: str) -> FastMCP:
     subdir = "." if root == p else p.relative_to(root).as_posix()
     name = p.name
     vault = Vault(name=name, path=p, repo_root=root, subdir=subdir, description=f"local vault: {name}")
-    mcp = FastMCP("obsidian-gateway")
+    mcp = FastMCP("obsidian-gateway", mask_error_details=False)
     register_tools(mcp, {name: vault}, authors=None, local=True)
     return mcp
 

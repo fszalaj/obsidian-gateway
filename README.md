@@ -157,6 +157,10 @@ claude mcp add --transport http --scope project teamwiki \
   traversal, symlink escape, hidden/dotfiles (incl. `.env`), non-`.md`, and
   `.git`/`.obsidian`. `search` / `backlinks` / `list_tags` are bounded to `*.md`
   and exclude system dirs via ripgrep globs.
+- **Server-mode error masking** - the HTTP server runs with `mask_error_details=True`, so
+  only the gateway's own expected failures (not_found, path-guard, write/vault-forbidden, ...)
+  reach the client as `ToolError`; unexpected OS/git errors are not leaked. Local mode keeps
+  details visible.
 - **Commits are attributed** to the requesting user (server) or the local git
   identity (local), and pathspec-scoped to the vault subdir.
 
