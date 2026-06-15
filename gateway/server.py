@@ -16,6 +16,17 @@ from . import acl, config, gitops
 from .tools import register_tools
 from .vaults import Vault
 
+INSTRUCTIONS = (
+    "Read, search, and edit Markdown notes in a git-backed Obsidian vault - no Obsidian app "
+    "required. Discover with list_vaults / list_notes; read with read_note; find with search "
+    "(ripgrep), backlinks, list_tags, and query_notes (by frontmatter type/tag). Edit with "
+    "write_note, patch_note (insert after a heading or at top/bottom), patch_frontmatter (YAML "
+    "keys only), delete_note, and rename_note - each can commit. Conventions: note paths are "
+    "relative to the vault and end in .md; wikilinks are [[Note Name]] by flat filename; prefer "
+    "patch_* over rewriting a whole note. Edits are atomic and committed to git with author "
+    "attribution; git is the source of truth."
+)
+
 
 def build_server() -> FastMCP:
     vaults = config.load_vaults()
@@ -25,7 +36,7 @@ def build_server() -> FastMCP:
         for token, info in registry.items()
     }
     authors = {info.sub: info.email for info in registry.values()}
-    mcp = FastMCP("obsidian-gateway", auth=StaticTokenVerifier(tokens=token_map), mask_error_details=True)
+    mcp = FastMCP("obsidian-gateway", instructions=INSTRUCTIONS, auth=StaticTokenVerifier(tokens=token_map), mask_error_details=True)
     register_tools(mcp, vaults, authors)
     return mcp
 
@@ -50,7 +61,7 @@ def build_local_server(vault_path: str) -> FastMCP:
     subdir = "." if root == p else p.relative_to(root).as_posix()
     name = p.name
     vault = Vault(name=name, path=p, repo_root=root, subdir=subdir, description=f"local vault: {name}")
-    mcp = FastMCP("obsidian-gateway", mask_error_details=False)
+    mcp = FastMCP("obsidian-gateway", instructions=INSTRUCTIONS, mask_error_details=False)
     register_tools(mcp, {name: vault}, authors=None, local=True)
     return mcp
 

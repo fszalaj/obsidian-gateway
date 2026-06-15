@@ -1,197 +1,215 @@
 # obsidian-gateway
 
-A filesystem/git-native **MCP gateway** for Obsidian vaults. It lets AI agents
-(Claude Code, Codex, Cursor, …) read, search and *edit* a vault with git-aware,
-Obsidian-aware operations - **no Obsidian GUI has to be running**, and git stays
-the single source of truth.
+A filesystem- and git-native **MCP gateway** for Obsidian vaults. AI agents (Claude Code,
+Codex, Cursor, Antigravity) read, search, and **edit** a vault through git-aware,
+Obsidian-aware tools - with **no Obsidian GUI running**, and git as the single source of truth.
 
-It exists because the Obsidian *Local REST API* plugin serves only the one vault
-open in a running desktop instance, writes without a lock (silent lost updates),
-needs a token pasted into every client, and fights git-as-source-of-truth. This
-gateway talks to the markdown files directly.
+It exists because the Obsidian *Local REST API* plugin serves only the one vault open in a
+running desktop instance, writes without a lock (silent lost updates), needs a token pasted
+into every client, and fights git-as-source-of-truth. This gateway talks to the Markdown
+files directly.
 
----
+## Architecture
 
-## Two ways to run it
+```mermaid
+flowchart LR
+    subgraph clients [Agents]
+        A1[Claude Code]
+        A2[Codex]
+        A3[Antigravity / Cursor]
+    end
+    A1 --- M(( MCP ))
+    A2 --- M
+    A3 --- M
+    M -->|stdio, per repo, no auth| L[Local gateway]
+    M -->|HTTP + bearer + ACL| S[Shared gateway]
+    L --> V[/Vault: Markdown files/]
+    S --> V
+    V <-->|atomic write + scoped commit| G[(git)]
+```
+
+Both modes run the **same** code over the **same** path guards; they differ only in transport
+and trust boundary.
+
+## Two ways to run
 
 | | **Local mode** (per repo) | **Shared server** (team) |
 |---|---|---|
 | Use when | a repo wants its own vault for its agents | many people/vaults behind one always-on endpoint |
-| Transport | stdio subprocess (launched by `.mcp.json`) | HTTPS (e.g. over Tailscale) |
-| **Secrets / tokens** | **none** - nothing to generate | per-user bearer tokens (admin-generated) |
-| Trust boundary | local filesystem access you already have | tailnet + HTTPS + per-user ACL |
+| Transport | stdio subprocess (launched by `.mcp.json`) | HTTP (put behind Tailscale/HTTPS) |
+| Secrets / tokens | **none** - nothing to generate | per-user bearer tokens (admin-generated) |
+| Trust boundary | local filesystem access you already have | tailnet + HTTPS + per-vault ACL |
 | Obsidian needed | no | no |
 
-Most repos want **Local mode**. The shared server is only for a central,
-always-on team gateway over the network.
+Most repos want **Local mode**. The shared server is only for a central, always-on team gateway.
 
----
+## Distribution - the `stable` branch ("update once")
 
-## Local mode - zero secrets, zero setup
+The gateway ships from one moving branch, so a release reaches every consumer and server
+without re-pinning anything by hand.
 
-Add this to the repo's `.mcp.json` (at the repo root). Every contributor's agent
-then gets the gateway automatically - **no token to generate, nothing to paste**:
+```mermaid
+flowchart LR
+    PR[merge PR to main] --> TAG[tag vX.Y.Z]
+    TAG --> MV[move stable -> vX.Y.Z]
+    MV --> C["Consumers<br/>uvx --refresh @stable<br/>(updates next session)"]
+    MV --> S["Servers<br/>daily uv tool reinstall<br/>(restart if stable moved)"]
+```
+
+- **Consumers** pin `@stable` with `uvx --refresh` -> the ref is re-fetched on every launch, so
+  a new release auto-propagates the next time an agent starts. No per-repo re-pin.
+- **Servers** (long-running) run a pinned `uv tool install @stable` plus a daily job that
+  reinstalls + restarts only when `stable` actually moves.
+- Every release is **also** an immutable `vX.Y.Z` tag - pin a tag instead of `stable` when you
+  need a frozen, auditable version.
+
+> A moving *tag* does not work (uvx caches the resolved commit); a *branch* + `--refresh` does.
+
+## Quickstart - local mode (zero secrets)
+
+Add this to the repo's `.mcp.json` at the repo root:
 
 ```jsonc
 {
   "mcpServers": {
     "wiki": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/fszalaj/obsidian-gateway@v0.2.0",
-               "obsidian-gateway", "--vault", "./wiki"]
+      "args": ["--refresh", "--from", "git+https://github.com/fszalaj/obsidian-gateway@stable",
+               "obsidian-gateway", "--local"]
     }
   }
 }
 ```
 
-- `uvx` fetches + runs the gateway in an ephemeral env (first launch builds, then
-  cached). Pin a tag (`@v0.2.0`) for reproducibility.
-- It auto-detects the git repo root, so commits stay scoped to the vault subdir
-  and are attributed to your own `git config user.name/email`.
-- **Who can use it:** anyone who can clone the repo. The trust boundary is local
-  filesystem access - there is no token because there is no network surface.
+- `--local` auto-detects the vault in the cwd (a `./wiki`, a single `*-obsidian-vault/`, or a
+  dir with `.obsidian/`). Pass `--vault ./<dir>` instead to be explicit.
+- `--refresh` re-fetches `@stable` each launch, so releases auto-apply (adds ~1-2s to start).
+- Commits are scoped to the vault's git subdir and attributed to your own
+  `git config user.name/email`. No token: the trust boundary is local filesystem access.
 
-That is the whole setup. Open the repo in your agent, approve the `wiki` server
-once, done.
+Open the repo in your agent, approve the `wiki` server once, done.
 
----
-
-## What you can do (tools)
+## Tools
 
 | Tool | |
 |---|---|
-| `list_vaults` | vaults available here |
-| `list_notes` | markdown paths in a vault |
+| `list_vaults` | vaults reachable here |
+| `list_notes` | Markdown paths in a vault |
 | `read_note` | raw note content |
 | `search` | ripgrep literal/regex full-text |
 | `backlinks` | notes that `[[wikilink]]` to a note |
 | `list_tags` | inline `#tags` with counts |
 | `query_notes` | find notes by frontmatter `type` / `tag` (headless Dataview-lite) |
 | `write_note` | atomic write (+ optional commit) |
-| `patch_note` | insert without rewriting: after a heading, or top/bottom (+ commit) |
-| `patch_frontmatter` | update YAML frontmatter keys, body/comments intact (+ commit) |
+| `patch_note` | insert after a heading or at top/bottom, no full rewrite (+ commit) |
+| `patch_frontmatter` | update YAML frontmatter keys, body intact (+ commit) |
 | `delete_note` | delete a note (+ optional commit) |
+| `rename_note` | rename + optionally fix inbound `[[wikilinks]]` (+ commit) |
 | `git_status` / `git_commit` | pending changes / commit (subdir-scoped, attributed) |
 
-Edits are atomic (temp file + rename); every path goes through guards that block
-traversal, hidden files, non-`.md` targets and `.git`/`.obsidian` - so a caller
+Edits are atomic (temp file + `rename`). Every path goes through `safe_note_path`, which blocks
+traversal, symlink escape, hidden/dotfiles, non-`.md` targets, and `.git`/`.obsidian` - a caller
 can never read or write outside the vault's notes.
 
----
+## Shared server mode
 
-## Shared server mode - one gateway, many vaults, many users
+Run this only for a central, always-on gateway reachable over the network.
 
-Run this only if you want a central, always-on gateway reachable over the network.
+**1. Map vaults** - `cp vaults.example.yaml vaults.yaml`, then set `name -> path / repo_root /
+subdir`. `repo_root` + `subdir` pathspec-scope commits to a vault that lives inside a larger repo.
 
-### 1. Map your vaults
-
-```bash
-cp vaults.example.yaml vaults.yaml      # edit: name -> path / repo_root / subdir
-```
-
-`repo_root` + `subdir` matter when a vault is a subdirectory of a bigger repo:
-commits are pathspec-scoped to the subdir so they never sweep in sibling code.
-
-### 2. Generate a token per user  (who generates secrets, and how)
-
-The **person running the server (the admin)** mints one bearer token per user:
+**2. Mint a token per user** (the admin does this):
 
 ```bash
 cp tokens.example.yaml tokens.yaml
-openssl rand -hex 32                     # run once PER user -> paste as the key
-chmod 0600 tokens.yaml
+openssl rand -hex 32          # once PER user -> the key
+chmod 0600 tokens.yaml        # refused at load if group/world-readable
 ```
 
 ```yaml
-# tokens.yaml  (gitignored - never committed)
 tokens:
-  "8f3c…the-hex-token…":          # the value from `openssl rand -hex 32`
-    sub: alice                    # identity recorded on that user's commits
-    vaults: [teamwiki]            # the ONLY vaults this token may see/touch
-    write: true                   # false = read-only
+  "8f3c…hex…":
+    sub: alice                # identity recorded on that user's commits
+    vaults: [teamwiki]        # the ONLY vaults this token may see/touch
+    write: true               # false = read-only
 ```
 
-A token can only see, enumerate and reach the vaults in its `vaults` list -
-everything else returns an opaque `vault_forbidden`, indistinguishable from a
-vault that does not exist. `vaults.yaml` + `tokens.yaml` are gitignored: paths
-and secrets live only on the box that runs the gateway.
+A token sees only the vaults in its `vaults` list; anything else returns an opaque
+`vault_forbidden`. `vaults.yaml` + `tokens.yaml` are gitignored.
 
-### 3. Run / deploy
+**3. Run** - `uv run obsidian-gateway` (127.0.0.1:8765, path `/mcp/`). For a team box, run it as
+a service behind Tailscale Serve - see `deploy/` and *Operate* below.
 
-```bash
-uv run obsidian-gateway                  # 127.0.0.1:8765, path /mcp/
-```
-
-For a team box, put it behind Tailscale Serve (private HTTPS, tailnet-only) and
-run it as a service - see `deploy/tailscale.md` and `deploy/obsidian-gateway.service`.
-
-### 4. Connect a client  (how a user joins)
-
-The admin shares that user's token over a secure channel (password manager, not
-chat). The user adds the server once:
+**4. Connect** - the admin shares the token over a password manager (not chat):
 
 ```bash
-export GW_TOKEN=…their-token…
 claude mcp add --transport http --scope project teamwiki \
-  https://YOUR-GATEWAY-HOST.<tailnet>.ts.net/mcp/ \
-  --header "Authorization: Bearer $GW_TOKEN"
+  https://YOUR-HOST.<tailnet>.ts.net/mcp/ --header "Authorization: Bearer $GW_TOKEN"
 ```
-
----
 
 ## Security model
 
-- **No secrets in the repo.** `vaults.yaml` and `tokens.yaml` are gitignored;
-  only `*.example.yaml` (placeholders) ship. The code contains no credentials, and
-  `tokens.yaml` is refused at load time if it is group/world-readable.
-- **Local mode has no secret surface** - it is a local stdio subprocess; the
-  trust boundary is filesystem access the user already has. (First launch still
-  fetches and runs the gateway from its pinned ref - pin a commit SHA, not a tag.)
-- **Server mode: defense in depth, not a hardened public endpoint** - tailnet ACL
-  (network) + HTTPS (transport) + a per-user **static bearer token** (FastMCP
-  `StaticTokenVerifier`). That bearer layer is a shared secret suitable **only
-  behind a trusted tailnet**, not a standalone authentication control - do not
-  expose the server publicly.
-- **Path guards on note I/O** - `read_note` / `write_note` / `patch_*` /
-  `delete_note` / `rename_note` go through `safe_note_path`, which rejects
-  traversal, symlink escape, hidden/dotfiles (incl. `.env`), non-`.md`, and
-  `.git`/`.obsidian`. `search` / `backlinks` / `list_tags` are bounded to `*.md`
-  and exclude system dirs via ripgrep globs.
-- **Server-mode error masking** - the HTTP server runs with `mask_error_details=True`, so
-  only the gateway's own expected failures (not_found, path-guard, write/vault-forbidden, ...)
-  reach the client as `ToolError`; unexpected OS/git errors are not leaked. Local mode keeps
-  details visible.
-- **Commits are attributed** to the requesting user (server) or the local git
-  identity (local), and pathspec-scoped to the vault subdir.
-
----
+- **No secrets in the repo.** `vaults.yaml` / `tokens.yaml` are gitignored; only
+  `*.example.yaml` ship. `tokens.yaml` is refused at load if group/world-readable.
+- **Local mode has no secret surface** - a local stdio subprocess; the trust boundary is
+  filesystem access the user already has.
+- **Server mode is defense in depth, not a public endpoint** - tailnet ACL + HTTPS + per-user
+  `StaticTokenVerifier` bearer token + per-vault ACL. The bearer layer is a shared secret for
+  use **behind a trusted tailnet**; do not expose the server publicly.
+- **Path guards on all note I/O** via `safe_note_path` (traversal, symlink, hidden/dotfiles
+  incl. `.env`, non-`.md`, `.git`/`.obsidian`). Search/backlinks/tags are bounded to `*.md`.
+- **Server-mode error masking** - the HTTP server runs `mask_error_details=True`: only the
+  gateway's own expected failures surface as `ToolError`; unexpected OS/git errors are hidden.
+  Local mode keeps details visible.
+- **Commits are attributed** to the requesting user (server) or the local git identity (local),
+  and pathspec-scoped to the vault subdir.
 
 ## Set it up with an AI
 
 Paste this into an agent at a repo's root to wire in local mode:
 
 ```
-Add the obsidian-gateway to this repo so agents can read/edit our vault over MCP,
-with zero tokens. Steps:
-1. Find the vault dir (the folder with the markdown / an .obsidian/ folder; often
-   `wiki/` or `<repo>-obsidian-vault/`).
-2. Create/merge `.mcp.json` at the repo root with an mcpServers."wiki" entry that
-   runs: uvx --from git+https://github.com/fszalaj/obsidian-gateway@v0.2.0
-   obsidian-gateway --vault ./<that vault dir>.
-3. Verify: `uvx --from git+https://github.com/fszalaj/obsidian-gateway@v0.2.0 \
-   obsidian-gateway --help` resolves; then in the agent, call list_vaults and
-   read_note on one note to confirm it connects.
+Add the obsidian-gateway to this repo so agents can read/edit our vault over MCP with zero
+tokens:
+1. Create or merge `.mcp.json` at the repo root with an mcpServers."wiki" entry that runs:
+   uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable obsidian-gateway --local
+   (`--local` auto-detects the vault: ./wiki, a *-obsidian-vault dir, or a dir with .obsidian/.
+   If detection is ambiguous, use `--vault ./<vault dir>` instead of `--local`.)
+2. Verify: `uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable \
+   obsidian-gateway --help` resolves; then in the agent, call list_vaults and read one note.
 Branch + PR, no direct push, no AI attribution.
 ```
 
-For the shared server, ask your gateway admin for a token, then run the
-`claude mcp add … --header "Authorization: Bearer …"` from "Connect a client".
+For the shared server, ask your gateway admin for a token, then run the `claude mcp add …` from
+*Connect* above.
 
----
+## Operate (servers)
+
+A server runs the `@stable` release as a `uv tool`, with a daily auto-update that only restarts
+when `stable` moved:
+
+```bash
+uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable obsidian-gateway
+uv tool upgrade obsidian-gateway          # manual update; then restart the service
+```
+
+Point config at the live files via env (the binary lives in the uv cache, not next to the
+config): `OBSIDIAN_GATEWAY_VAULTS=/path/vaults.yaml`, `OBSIDIAN_GATEWAY_TOKENS=/path/tokens.yaml`.
+Reference units: `deploy/obsidian-gateway.service` (systemd) and the LaunchAgent in the homelab
+deploy. Health check: `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/mcp/` -> `401`.
+
+## Release (maintainers)
+
+1. PR -> merge to `main` (CI: `uv lock --check`, pytest matrix).
+2. Bump `pyproject.toml` version + `CHANGELOG.md`.
+3. Tag `vX.Y.Z` and push the tag (the release workflow builds it).
+4. Move `stable`: `git branch -f stable vX.Y.Z && git push --force-with-lease origin stable`.
+
+Consumers pick it up next session; servers within a day (or restart now).
 
 ## Develop
 
 ```bash
 uv venv && uv pip install -e ".[dev]"
-uv run pytest                            # ACL + path guards + edit/frontmatter logic
+uv run pytest                              # ACL + path guards + edit/frontmatter + detect + masking
 ```
