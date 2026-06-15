@@ -5,6 +5,18 @@ All notable changes to obsidian-gateway. Consumers track the moving **`stable`**
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
 
+## v0.4.2 - 2026-06-15
+
+### Concurrency (CONC-1)
+- **Per-repo write lock** (`fcntl.flock`): serializes read-modify-write tools
+  (`patch_note` / `patch_frontmatter`) and concurrent commits across threads and processes on
+  one host, fixing lost-update and mixed-commit races on the shared server. Taken once at the
+  tool boundary (the inner commit never re-locks); degrades to a no-op (one-time warning) where
+  fcntl/flock is unavailable, rather than failing the write.
+- **Path-scoped commits**: each mutating op commits only its own files (`commit(paths=...)`),
+  so a `commit=True` op cannot sweep and mis-attribute a concurrent op's pending change.
+  `GIT_LITERAL_PATHSPECS=1` on every git call.
+
 ## v0.4.1 - 2026-06-15
 
 ### Docs
