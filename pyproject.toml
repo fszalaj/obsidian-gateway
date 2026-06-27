@@ -1,6 +1,6 @@
 [project]
 name = "knowledge-gateway"
-version = "0.7.3"
+version = "0.7.4"
 description = "Filesystem/git-native FastMCP knowledge gateway: serve an Obsidian vault over MCP, plus optional code-graph and doc-to-markdown tools (formerly obsidian-gateway)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -36,9 +36,9 @@ all = ["networkx>=3.4,<4", "tree-sitter-language-pack>=0.7", "markitdown>=0.1"]
 dev = ["pytest>=8.0", "pytest-cov>=5.0", "pytest-asyncio>=0.24", "networkx>=3.4,<4"]
 
 [project.urls]
-Homepage = "https://github.com/fszalaj/obsidian-gateway"
-Repository = "https://github.com/fszalaj/obsidian-gateway"
-Issues = "https://github.com/fszalaj/obsidian-gateway/issues"
+Homepage = "https://github.com/fszalaj/knowledge-gateway"
+Repository = "https://github.com/fszalaj/knowledge-gateway"
+Issues = "https://github.com/fszalaj/knowledge-gateway/issues"
 
 [project.scripts]
 knowledge-gateway = "gateway.server:main"

@@ -84,7 +84,7 @@ Add this to the repo's `.mcp.json` at the repo root:
   "mcpServers": {
     "wiki": {
       "command": "uvx",
-      "args": ["--refresh", "--from", "git+https://github.com/fszalaj/obsidian-gateway@stable",
+      "args": ["--refresh", "--from", "git+https://github.com/fszalaj/knowledge-gateway@stable",
                "knowledge-gateway", "--local"]
     }
   }
@@ -212,10 +212,10 @@ Paste this into an agent at a repo's root to wire in local mode:
 Add the knowledge-gateway to this repo so agents can read/edit our vault over MCP with zero
 tokens:
 1. Create or merge `.mcp.json` at the repo root with an mcpServers."wiki" entry that runs:
-   uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway --local
+   uvx --refresh --from git+https://github.com/fszalaj/knowledge-gateway@stable knowledge-gateway --local
    (`--local` auto-detects the vault: ./wiki, a *-obsidian-vault dir, or a dir with .obsidian/.
    If detection is ambiguous, use `--vault ./<vault dir>` instead of `--local`.)
-2. Verify: `uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable \
+2. Verify: `uvx --refresh --from git+https://github.com/fszalaj/knowledge-gateway@stable \
    knowledge-gateway --help` resolves; then in the agent, call list_vaults and read one note.
 Branch + PR, no direct push, no AI attribution.
 ```
@@ -229,7 +229,7 @@ A server runs the `@stable` release as a `uv tool`, with a daily job that reinst
 restarts only when `stable` moved. Reference units are in `deploy/`:
 
 ```bash
-uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway
+uv tool install --from git+https://github.com/fszalaj/knowledge-gateway@stable knowledge-gateway
 # the binary lives in the uv cache, so point config at the live files via env:
 #   KNOWLEDGE_GATEWAY_VAULTS=<dir>/vaults.yaml   KNOWLEDGE_GATEWAY_TOKENS=<dir>/tokens.yaml
 ```
@@ -238,7 +238,7 @@ uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable kn
 - `deploy/knowledge-gateway-update.{service,timer}` + `deploy/auto-update.sh` - the daily auto-update.
 
 Update now instead of waiting for the timer: `uv tool install --reinstall --from
-git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway`, then restart the
+git+https://github.com/fszalaj/knowledge-gateway@stable knowledge-gateway`, then restart the
 service. Health: `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/mcp/` -> `401`.
 
 ## Release (maintainers)

@@ -5,7 +5,7 @@ name: release
 # from a known-green tree. The GitHub Release runs before PyPI so a not-yet-configured
 # Trusted Publisher cannot block it.
 # One-time setup on pypi.org: add a pending publisher for project `knowledge-gateway` ->
-# owner fszalaj, repo obsidian-gateway, workflow release.yml, environment pypi.
+# owner fszalaj, repo knowledge-gateway, workflow release.yml, environment pypi.
 # (Renamed from `obsidian-gateway`; the old project's publisher no longer matches the dist name.)
 on:
   push:

@@ -1,9 +1,17 @@
 # Changelog
 
-All notable changes to obsidian-gateway. Consumers track the moving **`stable`** branch
+All notable changes to knowledge-gateway. Consumers track the moving **`stable`** branch
 (`uvx --refresh --from git+...@stable`); each release moves `stable` and auto-propagates on
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
+
+## v0.7.4 - 2026-06-27
+
+### Changed
+- GitHub repo renamed to **`knowledge-gateway`**; all URLs now point to
+  `github.com/fszalaj/knowledge-gateway` (the old `obsidian-gateway` URL redirects, so existing
+  `@stable` configs keep working). First release cut under the `knowledge-gateway` PyPI Trusted
+  Publisher.
 
 ## v0.7.3 - 2026-06-27
 
@@ -43,7 +51,7 @@ pinning/audit.
 
 ### PyPI
 - Trusted Publishing must be reconfigured for the new project name: add a pending publisher for
-  `knowledge-gateway` (owner fszalaj, repo obsidian-gateway, workflow release.yml, environment pypi).
+  `knowledge-gateway` (owner fszalaj, repo knowledge-gateway, workflow release.yml, environment pypi).
 
 ## v0.6.0 - 2026-06-27
 

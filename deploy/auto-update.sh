@@ -3,9 +3,9 @@
 export PATH="$HOME/.local/bin:$PATH"
 SHA_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/knowledge-gateway-stable.sha"
 mkdir -p "$(dirname "$SHA_FILE")"
-remote=$(git ls-remote https://github.com/fszalaj/obsidian-gateway stable 2>/dev/null | awk '{print $1}')
+remote=$(git ls-remote https://github.com/fszalaj/knowledge-gateway stable 2>/dev/null | awk '{print $1}')
 [ -z "$remote" ] && exit 0
 [ "$remote" = "$(cat "$SHA_FILE" 2>/dev/null)" ] && exit 0
-uv tool install --reinstall --from "git+https://github.com/fszalaj/obsidian-gateway@stable" knowledge-gateway || exit 1
+uv tool install --reinstall --from "git+https://github.com/fszalaj/knowledge-gateway@stable" knowledge-gateway || exit 1
 systemctl --user restart knowledge-gateway || exit 1
 echo "$remote" > "$SHA_FILE"

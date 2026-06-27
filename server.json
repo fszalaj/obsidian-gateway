@@ -3,15 +3,15 @@
   "name": "io.github.fszalaj/knowledge-gateway",
   "description": "Filesystem/git-native FastMCP knowledge gateway: Obsidian vault + optional code-graph and doc-to-markdown tools over MCP",
   "repository": {
-    "url": "https://github.com/fszalaj/obsidian-gateway",
+    "url": "https://github.com/fszalaj/knowledge-gateway",
     "source": "github"
   },
-  "version": "0.7.3",
+  "version": "0.7.4",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "knowledge-gateway",
-      "version": "0.7.3",
+      "version": "0.7.4",
       "transport": { "type": "stdio" },
       "runtimeHint": "uvx"
     }
