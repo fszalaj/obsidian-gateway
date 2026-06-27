@@ -1,7 +1,7 @@
-# systemd --user unit for the @stable uv-tool deploy (daily auto-update: deploy/obsidian-gateway-update.*).
-# Install: uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable obsidian-gateway
-#   cp {vaults,tokens}.example.yaml ~/obsidian-gateway/ (edit; chmod 0600 tokens.yaml)
-#   cp deploy/obsidian-gateway.service ~/.config/systemd/user/ && systemctl --user enable --now obsidian-gateway
+# systemd --user unit for the @stable uv-tool deploy (daily auto-update: deploy/knowledge-gateway-update.*).
+# Install: uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway
+#   cp {vaults,tokens}.example.yaml ~/knowledge-gateway/ (edit; chmod 0600 tokens.yaml)
+#   cp deploy/knowledge-gateway.service ~/.config/systemd/user/ && systemctl --user enable --now knowledge-gateway
 #   loginctl enable-linger $USER   # Tailscale Serve fronts the loopback bind.
 
 [Unit]
@@ -10,13 +10,13 @@ After=network-online.target
 
 [Service]
 Type=simple
-Environment=OBSIDIAN_GATEWAY_HOST=127.0.0.1
-Environment=OBSIDIAN_GATEWAY_PORT=8765
-Environment=OBSIDIAN_GATEWAY_PATH=/mcp/
-Environment=OBSIDIAN_GATEWAY_VAULTS=%h/obsidian-gateway/vaults.yaml
-Environment=OBSIDIAN_GATEWAY_TOKENS=%h/obsidian-gateway/tokens.yaml
+Environment=KNOWLEDGE_GATEWAY_HOST=127.0.0.1
+Environment=KNOWLEDGE_GATEWAY_PORT=8765
+Environment=KNOWLEDGE_GATEWAY_PATH=/mcp/
+Environment=KNOWLEDGE_GATEWAY_VAULTS=%h/knowledge-gateway/vaults.yaml
+Environment=KNOWLEDGE_GATEWAY_TOKENS=%h/knowledge-gateway/tokens.yaml
 Environment=PYTHONDONTWRITEBYTECODE=1
-ExecStart=%h/.local/bin/obsidian-gateway
+ExecStart=%h/.local/bin/knowledge-gateway
 Restart=on-failure
 RestartSec=3
 

@@ -5,6 +5,14 @@ All notable changes to obsidian-gateway. Consumers track the moving **`stable`**
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
 
+## v0.7.1 - 2026-06-27
+
+### Changed
+- **Dropped the obsidian-gateway back-compat aliases** (pre-1.0 dev): removed the `obsidian-gateway`
+  console scripts and renamed the `OBSIDIAN_GATEWAY_*` env vars to `KNOWLEDGE_GATEWAY_*`. The only
+  names now are `knowledge-gateway` (the git repo URL stays `.../obsidian-gateway` until the repo is
+  renamed). Swept the README + deploy units; renamed the `deploy/*.service`/`.timer` unit files.
+
 ## v0.7.0 - 2026-06-27
 
 ### Changed

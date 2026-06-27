@@ -23,7 +23,7 @@ def _resolve(env_var: str, default_name: str) -> Path:
 
 
 def load_vaults(path: Path | None = None) -> dict[str, Vault]:
-    cfg = path or _resolve("OBSIDIAN_GATEWAY_VAULTS", DEFAULT_VAULTS_FILE)
+    cfg = path or _resolve("KNOWLEDGE_GATEWAY_VAULTS", DEFAULT_VAULTS_FILE)
     if not cfg.exists():
         raise FileNotFoundError(
             f"vaults config not found: {cfg} — copy vaults.example.yaml to vaults.yaml"
@@ -61,7 +61,7 @@ def load_vaults(path: Path | None = None) -> dict[str, Vault]:
 
 
 def load_tokens(path: Path | None = None) -> dict:
-    cfg = path or _resolve("OBSIDIAN_GATEWAY_TOKENS", DEFAULT_TOKENS_FILE)
+    cfg = path or _resolve("KNOWLEDGE_GATEWAY_TOKENS", DEFAULT_TOKENS_FILE)
     if not cfg.exists():
         raise FileNotFoundError(
             f"tokens config not found: {cfg} — copy tokens.example.yaml to tokens.yaml"

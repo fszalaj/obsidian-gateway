@@ -3,9 +3,8 @@
 <!-- mcp-name: io.github.fszalaj/knowledge-gateway -->
 
 > Formerly **obsidian-gateway**. Renamed because it is no longer just a vault wrapper - it is a
-> filesystem- and git-native **knowledge gateway** for AI agents. The package and CLI are now
-> `knowledge-gateway` (the old `obsidian-gateway` names stay as back-compat aliases); the MCP
-> server is still keyed `wiki` in client configs.
+> filesystem- and git-native **knowledge gateway** for AI agents. The package, CLI, and MCP
+> display name are now `knowledge-gateway`; the MCP server is still keyed `wiki` in client configs.
 
 A single MCP server that gives agents (Claude Code, Codex, Cursor, Gemini, Copilot, Antigravity)
 three capabilities over one connection:
@@ -86,7 +85,7 @@ Add this to the repo's `.mcp.json` at the repo root:
     "wiki": {
       "command": "uvx",
       "args": ["--refresh", "--from", "git+https://github.com/fszalaj/obsidian-gateway@stable",
-               "obsidian-gateway", "--local"]
+               "knowledge-gateway", "--local"]
     }
   }
 }
@@ -141,7 +140,7 @@ Two opt-in capabilities, gated behind extras so the core install stays dependenc
 **Build a graph** (AST-only - local, no network, no LLM) where the code lives:
 
 ```bash
-obsidian-gateway-graph /path/to/code-repo -o /path/to/vault/.graph/myrepo.json
+knowledge-gateway-graph /path/to/code-repo -o /path/to/vault/.graph/myrepo.json
 # in a local-mode session the graph_build tool does the same, writing .graph/<name>.json
 ```
 
@@ -178,7 +177,7 @@ tokens:
 A token sees only the vaults in its `vaults` list; anything else returns an opaque
 `vault_forbidden`. `vaults.yaml` + `tokens.yaml` are gitignored.
 
-**3. Run** - `uv run obsidian-gateway` (127.0.0.1:8765, path `/mcp/`). For a team box, run it as
+**3. Run** - `uv run knowledge-gateway` (127.0.0.1:8765, path `/mcp/`). For a team box, run it as
 a service behind Tailscale Serve - see `deploy/` and *Operate* below.
 
 **4. Connect** - the admin shares the token over a password manager (not chat):
@@ -210,14 +209,14 @@ claude mcp add --transport http --scope project teamwiki \
 Paste this into an agent at a repo's root to wire in local mode:
 
 ```
-Add the obsidian-gateway to this repo so agents can read/edit our vault over MCP with zero
+Add the knowledge-gateway to this repo so agents can read/edit our vault over MCP with zero
 tokens:
 1. Create or merge `.mcp.json` at the repo root with an mcpServers."wiki" entry that runs:
-   uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable obsidian-gateway --local
+   uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway --local
    (`--local` auto-detects the vault: ./wiki, a *-obsidian-vault dir, or a dir with .obsidian/.
    If detection is ambiguous, use `--vault ./<vault dir>` instead of `--local`.)
 2. Verify: `uvx --refresh --from git+https://github.com/fszalaj/obsidian-gateway@stable \
-   obsidian-gateway --help` resolves; then in the agent, call list_vaults and read one note.
+   knowledge-gateway --help` resolves; then in the agent, call list_vaults and read one note.
 Branch + PR, no direct push, no AI attribution.
 ```
 
@@ -230,16 +229,16 @@ A server runs the `@stable` release as a `uv tool`, with a daily job that reinst
 restarts only when `stable` moved. Reference units are in `deploy/`:
 
 ```bash
-uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable obsidian-gateway
+uv tool install --from git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway
 # the binary lives in the uv cache, so point config at the live files via env:
-#   OBSIDIAN_GATEWAY_VAULTS=<dir>/vaults.yaml   OBSIDIAN_GATEWAY_TOKENS=<dir>/tokens.yaml
+#   KNOWLEDGE_GATEWAY_VAULTS=<dir>/vaults.yaml   KNOWLEDGE_GATEWAY_TOKENS=<dir>/tokens.yaml
 ```
 
-- `deploy/obsidian-gateway.service` - the service (systemd `--user`).
-- `deploy/obsidian-gateway-update.{service,timer}` + `deploy/auto-update.sh` - the daily auto-update.
+- `deploy/knowledge-gateway.service` - the service (systemd `--user`).
+- `deploy/knowledge-gateway-update.{service,timer}` + `deploy/auto-update.sh` - the daily auto-update.
 
 Update now instead of waiting for the timer: `uv tool install --reinstall --from
-git+https://github.com/fszalaj/obsidian-gateway@stable obsidian-gateway`, then restart the
+git+https://github.com/fszalaj/obsidian-gateway@stable knowledge-gateway`, then restart the
 service. Health: `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/mcp/` -> `401`.
 
 ## Release (maintainers)

@@ -1,0 +1,13 @@
+# Daily auto-update for the gateway (pairs with knowledge-gateway-update.timer).
+# Install:
+#   cp deploy/auto-update.sh $HOME/knowledge-gateway/ && chmod +x $HOME/knowledge-gateway/auto-update.sh
+#   cp deploy/knowledge-gateway-update.service deploy/knowledge-gateway-update.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now knowledge-gateway-update.timer
+
+[Unit]
+Description=Update Obsidian gateway to the latest @stable
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh %h/knowledge-gateway/auto-update.sh

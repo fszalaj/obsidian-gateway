@@ -79,8 +79,8 @@ def main() -> None:
     ap.add_argument("--local", action="store_true", help="auto-detect the cwd's vault and serve it locally over stdio")
     args, _ = ap.parse_known_args()
 
-    vault = args.vault or os.environ.get("KNOWLEDGE_GATEWAY_VAULT") or os.environ.get("OBSIDIAN_GATEWAY_VAULT")
-    _local_env = (os.environ.get("KNOWLEDGE_GATEWAY_LOCAL") or os.environ.get("OBSIDIAN_GATEWAY_LOCAL", "")).strip().lower()
+    vault = args.vault or os.environ.get("KNOWLEDGE_GATEWAY_VAULT")
+    _local_env = os.environ.get("KNOWLEDGE_GATEWAY_LOCAL", "").strip().lower()
     if not vault and (args.local or _local_env in {"1", "true", "yes", "on"}):
         from .detect import VaultDetectionError, detect_vault
         try:
@@ -92,9 +92,9 @@ def main() -> None:
         build_local_server(vault).run(transport="stdio")
         return
 
-    host = os.environ.get("OBSIDIAN_GATEWAY_HOST", "127.0.0.1")
-    port = int(os.environ.get("OBSIDIAN_GATEWAY_PORT", "8765"))
-    path = os.environ.get("OBSIDIAN_GATEWAY_PATH", "/mcp/")
+    host = os.environ.get("KNOWLEDGE_GATEWAY_HOST", "127.0.0.1")
+    port = int(os.environ.get("KNOWLEDGE_GATEWAY_PORT", "8765"))
+    path = os.environ.get("KNOWLEDGE_GATEWAY_PATH", "/mcp/")
     build_server().run(transport="http", host=host, port=port, path=path)
 
 
