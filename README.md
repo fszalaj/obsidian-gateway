@@ -111,10 +111,37 @@ Open the repo in your agent, approve the `wiki` server once, done.
 | `delete_note` | delete a note (+ optional commit) |
 | `rename_note` | rename/move + rewrite inbound flat `[[wikilinks]]` when the name changes (+ optional commit) |
 | `git_status` / `git_commit` | pending changes / commit (subdir-scoped, attributed) |
+| `list_graphs` / `graph_query` / `graph_neighbors` / `god_nodes` / `graph_shortest_path` / `graph_stats` | query a built code graph (optional `[graph]`) |
+| `graph_build` | build a code/Ansible graph from a source tree into `.graph/<name>.json` (local mode only) |
+| `convert_to_markdown` | convert a file (PDF/Office/image/HTML/...) in the vault to Markdown (optional `[convert]`) |
 
 Edits are atomic (temp file + `rename`). Every path goes through `safe_note_path`, which blocks
 traversal, symlink escape, hidden/dotfiles, non-`.md` targets, and `.git`/`.obsidian` - a caller
 can never read or write outside the vault's notes.
+
+## Code graph and conversion (optional)
+
+Two opt-in capabilities, gated behind extras so the core install stays dependency-free:
+
+| Extra | Adds |
+|---|---|
+| `[graph]` | Python (`ast`) + Ansible (PyYAML) code graph + the query tools |
+| `[graph-all]` | the above plus a broad tree-sitter pass (JS/TS/Go/Rust/Terraform/bash/PowerShell/...) |
+| `[convert]` | attachment -> Markdown via markitdown |
+
+**Build a graph** (AST-only - local, no network, no LLM) where the code lives:
+
+```bash
+obsidian-gateway-graph /path/to/code-repo -o /path/to/vault/.graph/myrepo.json
+# in a local-mode session the graph_build tool does the same, writing .graph/<name>.json
+```
+
+**Query it** over MCP with `graph_query` / `graph_neighbors` / `god_nodes` /
+`graph_shortest_path` / `graph_stats`. The graph captures functions/classes/imports/calls and -
+uniquely for Ansible - roles, tasks, handlers, `include_role`/`import_tasks`/`notify`, and
+`task -> filter plugin` edges. Graph files live in the vault's `.graph/`, are vault-contained
+(resolved + checked to stay inside the vault), and are read-only to the gateway - the vault tools
+never depend on them.
 
 ## Shared server mode
 

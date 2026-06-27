@@ -5,6 +5,24 @@ All notable changes to obsidian-gateway. Consumers track the moving **`stable`**
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
 
+## v0.6.0 - 2026-06-27
+
+### Added
+- **Code graph (optional `[graph]` / `[graph-all]`)**: a `gateway/codegraph/` package builds a
+  NetworkX graph of a source tree - Python (`ast`), Ansible (PyYAML walker: roles/tasks/handlers/
+  `include_role`/`import_tasks`/`notify` + `task -> filter plugin` edges), and an optional broad
+  tree-sitter pass (JS/TS/Go/Rust/Terraform/bash/PowerShell/...). New read-only MCP tools
+  `list_graphs`, `graph_query`, `graph_neighbors`, `god_nodes`, `graph_shortest_path`,
+  `graph_stats`; a local-only `graph_build`; and a `obsidian-gateway-graph` CLI.
+- **Document conversion (optional `[convert]`)**: `convert_to_markdown` turns a vault file
+  (PDF/Office/image/HTML/...) into Markdown via markitdown.
+
+### Security
+- Graph files live in the vault's `.graph/` and are vault-contained (resolved + `is_relative_to`
+  the vault, so a symlinked `.graph` cannot escape). Malformed graphs map to `graph_invalid:`.
+  Optional deps (networkx, tree-sitter-language-pack, markitdown) are imported lazily, so the core
+  gateway requires none of them.
+
 ## v0.5.1 - 2026-06-16
 
 ### Changed
