@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
-  "name": "io.github.fszalaj/obsidian-gateway",
-  "description": "Filesystem/git-native FastMCP gateway serving Obsidian vaults over MCP",
+  "name": "io.github.fszalaj/knowledge-gateway",
+  "description": "Filesystem/git-native FastMCP knowledge gateway: Obsidian vault + optional code-graph and doc-to-markdown tools over MCP",
   "repository": {
     "url": "https://github.com/fszalaj/obsidian-gateway",
     "source": "github"
   },
-  "version": "0.5.1",
+  "version": "0.7.0",
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "obsidian-gateway",
-      "version": "0.5.1",
+      "identifier": "knowledge-gateway",
+      "version": "0.7.0",
       "transport": { "type": "stdio" },
       "runtimeHint": "uvx"
     }

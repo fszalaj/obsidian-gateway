@@ -5,6 +5,22 @@ All notable changes to obsidian-gateway. Consumers track the moving **`stable`**
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
 
+## v0.7.0 - 2026-06-27
+
+### Changed
+- **Renamed `obsidian-gateway` -> `knowledge-gateway`** - it is no longer just a vault wrapper but a
+  knowledge gateway (vault + code-graph + convert). The distribution, CLI, MCP display name, and
+  `server.json` are now `knowledge-gateway`; the import package stays `gateway`, and the MCP server
+  is still keyed `wiki` in client configs.
+- **Back-compat:** the old `obsidian-gateway` / `obsidian-gateway-graph` console scripts remain as
+  aliases, and `OBSIDIAN_GATEWAY_VAULT`/`_LOCAL` env vars are still read - existing `uvx --from
+  git+...@stable obsidian-gateway` configs keep working during the transition.
+- README repositioned (vault + code-graph + convert), `server.py` instructions list the graph/convert tools.
+
+### PyPI
+- Trusted Publishing must be reconfigured for the new project name: add a pending publisher for
+  `knowledge-gateway` (owner fszalaj, repo obsidian-gateway, workflow release.yml, environment pypi).
+
 ## v0.6.0 - 2026-06-27
 
 ### Added

@@ -1,7 +1,7 @@
 [project]
-name = "obsidian-gateway"
-version = "0.6.0"
-description = "Filesystem/git-native FastMCP gateway serving Obsidian vaults over MCP, with optional code-graph and doc-to-markdown tools"
+name = "knowledge-gateway"
+version = "0.7.0"
+description = "Filesystem/git-native FastMCP knowledge gateway: serve an Obsidian vault over MCP, plus optional code-graph and doc-to-markdown tools (formerly obsidian-gateway)"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Filip Szalaj" }]
@@ -41,6 +41,9 @@ Repository = "https://github.com/fszalaj/obsidian-gateway"
 Issues = "https://github.com/fszalaj/obsidian-gateway/issues"
 
 [project.scripts]
+knowledge-gateway = "gateway.server:main"
+knowledge-gateway-graph = "gateway.codegraph.cli:main"
+# back-compat aliases during the obsidian-gateway -> knowledge-gateway transition (old configs keep working)
 obsidian-gateway = "gateway.server:main"
 obsidian-gateway-graph = "gateway.codegraph.cli:main"
 

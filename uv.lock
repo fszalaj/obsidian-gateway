@@ -854,6 +854,58 @@ wheels = [
 ]
 
 [[package]]
+name = "knowledge-gateway"
+version = "0.7.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastmcp" },
+    { name = "pyyaml" },
+    { name = "ruamel-yaml" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "markitdown" },
+    { name = "networkx" },
+    { name = "tree-sitter-language-pack" },
+]
+convert = [
+    { name = "markitdown" },
+]
+dev = [
+    { name = "networkx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+]
+graph = [
+    { name = "networkx" },
+]
+graph-all = [
+    { name = "networkx" },
+    { name = "tree-sitter-language-pack" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastmcp", specifier = ">=3,<4" },
+    { name = "markitdown", marker = "extra == 'all'", specifier = ">=0.1" },
+    { name = "markitdown", marker = "extra == 'convert'", specifier = ">=0.1" },
+    { name = "networkx", marker = "extra == 'all'", specifier = ">=3.4,<4" },
+    { name = "networkx", marker = "extra == 'dev'", specifier = ">=3.4,<4" },
+    { name = "networkx", marker = "extra == 'graph'", specifier = ">=3.4,<4" },
+    { name = "networkx", marker = "extra == 'graph-all'", specifier = ">=3.4,<4" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
+    { name = "pyyaml", specifier = ">=6,<7" },
+    { name = "ruamel-yaml", specifier = ">=0.18,<0.20" },
+    { name = "tree-sitter-language-pack", marker = "extra == 'all'", specifier = ">=0.7" },
+    { name = "tree-sitter-language-pack", marker = "extra == 'graph-all'", specifier = ">=0.7" },
+]
+provides-extras = ["graph", "graph-all", "convert", "all", "dev"]
+
+[[package]]
 name = "magika"
 version = "0.6.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1114,58 +1166,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/be/6c8d1118b5f13b2881dc095d5b345de19c6638b8959c17409b6eff84c8aa/numpy-2.5.0-cp314-cp314t-win_amd64.whl", hash = "sha256:f7e5fa4382967ae6548bd2f174219afb908e294b0d5f625af01166edd5f7d9aa", size = 12736286, upload-time = "2026-06-21T20:57:46.935Z" },
     { url = "https://files.pythonhosted.org/packages/fd/6a/d3a169aaf8536cf228d56a09e04bcb713a2fe4410d4e2105b9419b5a9c89/numpy-2.5.0-cp314-cp314t-win_arm64.whl", hash = "sha256:016623417bb330d719d579daf2d6b9a01ddc52e41a9ed61a47f39fde46dcd865", size = 10686451, upload-time = "2026-06-21T20:57:49.313Z" },
 ]
-
-[[package]]
-name = "obsidian-gateway"
-version = "0.6.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastmcp" },
-    { name = "pyyaml" },
-    { name = "ruamel-yaml" },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "markitdown" },
-    { name = "networkx" },
-    { name = "tree-sitter-language-pack" },
-]
-convert = [
-    { name = "markitdown" },
-]
-dev = [
-    { name = "networkx" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-]
-graph = [
-    { name = "networkx" },
-]
-graph-all = [
-    { name = "networkx" },
-    { name = "tree-sitter-language-pack" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastmcp", specifier = ">=3,<4" },
-    { name = "markitdown", marker = "extra == 'all'", specifier = ">=0.1" },
-    { name = "markitdown", marker = "extra == 'convert'", specifier = ">=0.1" },
-    { name = "networkx", marker = "extra == 'all'", specifier = ">=3.4,<4" },
-    { name = "networkx", marker = "extra == 'dev'", specifier = ">=3.4,<4" },
-    { name = "networkx", marker = "extra == 'graph'", specifier = ">=3.4,<4" },
-    { name = "networkx", marker = "extra == 'graph-all'", specifier = ">=3.4,<4" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "pyyaml", specifier = ">=6,<7" },
-    { name = "ruamel-yaml", specifier = ">=0.18,<0.20" },
-    { name = "tree-sitter-language-pack", marker = "extra == 'all'", specifier = ">=0.7" },
-    { name = "tree-sitter-language-pack", marker = "extra == 'graph-all'", specifier = ">=0.7" },
-]
-provides-extras = ["graph", "graph-all", "convert", "all", "dev"]
 
 [[package]]
 name = "onnxruntime"

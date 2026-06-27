@@ -1,15 +1,24 @@
-# obsidian-gateway
+# knowledge-gateway
 
-<!-- mcp-name: io.github.fszalaj/obsidian-gateway -->
+<!-- mcp-name: io.github.fszalaj/knowledge-gateway -->
 
-A filesystem- and git-native **MCP gateway** for Obsidian vaults. AI agents (Claude Code,
-Codex, Cursor, Antigravity) read, search, and **edit** a vault through git-aware,
-Obsidian-aware tools - with **no Obsidian GUI running**, and git as the single source of truth.
+> Formerly **obsidian-gateway**. Renamed because it is no longer just a vault wrapper - it is a
+> filesystem- and git-native **knowledge gateway** for AI agents. The package and CLI are now
+> `knowledge-gateway` (the old `obsidian-gateway` names stay as back-compat aliases); the MCP
+> server is still keyed `wiki` in client configs.
 
-It exists because the Obsidian *Local REST API* plugin serves only the one vault open in a
-running desktop instance, writes without a lock (silent lost updates), requires a token in
-every client, and treats git as secondary. This gateway operates on the Markdown files
-directly, with git as the system of record.
+A single MCP server that gives agents (Claude Code, Codex, Cursor, Gemini, Copilot, Antigravity)
+three capabilities over one connection:
+
+- **Vault** - read, search, and **edit** a git-backed Markdown/Obsidian vault (no Obsidian GUI), git as the source of truth.
+- **Code graph** *(optional `[graph]` / `[graph-all]`)* - build and query a code/Ansible knowledge graph of a repo (functions, calls, roles, tasks, handlers, `task -> filter` edges); AST-only, local, no LLM.
+- **Convert** *(optional `[convert]`)* - turn PDF / Office / image / HTML files into Markdown.
+
+The vault layer exists because the Obsidian *Local REST API* plugin serves only the one vault open
+in a running desktop instance, writes without a lock (silent lost updates), needs a token in every
+client, and treats git as secondary. This gateway operates on the files directly, with git as the
+system of record - and adds the graph + convert tools the same way: one server, opt-in extras, no
+new servers to wire.
 
 ## Architecture
 

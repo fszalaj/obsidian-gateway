@@ -28,7 +28,10 @@ INSTRUCTIONS = (
     "are [[Note Name]] by flat filename; prefer patch_* over rewriting a whole note. If the vault "
     "has a _templates/ folder, read the matching _templates/<type>.md before creating a page. Edits are "
     "atomic, and each edit can optionally commit (commits are pathspec-scoped to the vault and "
-    "attributed to the caller); git is the source of truth."
+    "attributed to the caller); git is the source of truth. "
+    "Optional code-graph tools (when a graph has been built): list_graphs / graph_query / "
+    "graph_neighbors / god_nodes / graph_shortest_path / graph_stats; and convert_to_markdown "
+    "turns a vault file (PDF/Office/image/HTML) into Markdown."
 )
 
 
@@ -40,7 +43,7 @@ def build_server() -> FastMCP:
         for token, info in registry.items()
     }
     authors = {info.sub: info.email for info in registry.values()}
-    mcp = FastMCP("obsidian-gateway", instructions=INSTRUCTIONS, auth=StaticTokenVerifier(tokens=token_map), mask_error_details=True)
+    mcp = FastMCP("knowledge-gateway", instructions=INSTRUCTIONS, auth=StaticTokenVerifier(tokens=token_map), mask_error_details=True)
     register_tools(mcp, vaults, authors)
     return mcp
 
@@ -65,24 +68,25 @@ def build_local_server(vault_path: str) -> FastMCP:
     subdir = "." if root == p else p.relative_to(root).as_posix()
     name = p.name
     vault = Vault(name=name, path=p, repo_root=root, subdir=subdir, description=f"local vault: {name}")
-    mcp = FastMCP("obsidian-gateway", instructions=INSTRUCTIONS, mask_error_details=False)
+    mcp = FastMCP("knowledge-gateway", instructions=INSTRUCTIONS, mask_error_details=False)
     register_tools(mcp, {name: vault}, authors=None, local=True)
     return mcp
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(prog="obsidian-gateway")
+    ap = argparse.ArgumentParser(prog="knowledge-gateway")
     ap.add_argument("--vault", help="serve THIS single vault locally over stdio (no auth)")
     ap.add_argument("--local", action="store_true", help="auto-detect the cwd's vault and serve it locally over stdio")
     args, _ = ap.parse_known_args()
 
-    vault = args.vault or os.environ.get("OBSIDIAN_GATEWAY_VAULT")
-    if not vault and (args.local or os.environ.get("OBSIDIAN_GATEWAY_LOCAL", "").strip().lower() in {"1", "true", "yes", "on"}):
+    vault = args.vault or os.environ.get("KNOWLEDGE_GATEWAY_VAULT") or os.environ.get("OBSIDIAN_GATEWAY_VAULT")
+    _local_env = (os.environ.get("KNOWLEDGE_GATEWAY_LOCAL") or os.environ.get("OBSIDIAN_GATEWAY_LOCAL", "")).strip().lower()
+    if not vault and (args.local or _local_env in {"1", "true", "yes", "on"}):
         from .detect import VaultDetectionError, detect_vault
         try:
             vault = str(detect_vault(Path.cwd()))
         except VaultDetectionError as e:
-            print(f"obsidian-gateway: {e}", file=sys.stderr)
+            print(f"knowledge-gateway: {e}", file=sys.stderr)
             raise SystemExit(2)
     if vault:
         build_local_server(vault).run(transport="stdio")
