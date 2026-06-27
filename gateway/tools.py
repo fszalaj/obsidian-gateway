@@ -4,6 +4,7 @@ import functools
 import inspect
 import json
 import os
+from pathlib import Path
 
 from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_access_token
@@ -15,6 +16,8 @@ from .locks import write_lock
 from .search import ripgrep
 from .vaults import IMAGE_FORMATS, MAX_ATTACHMENT_BYTES, Vault
 from .writes import atomic_write
+from . import convert as convertmod
+from . import graph as graphmod
 
 MAX_NOTE_BYTES = 10 * 1024 * 1024  # read_note guard against a pathological huge file
 
@@ -26,6 +29,8 @@ _EXPECTED_PREFIXES = (
     "not_an_attachment:", "not_a_canvas:", "canvas_invalid:",
     "ambiguous_old_name:", "new_name_taken:", "frontmatter_",
     "vault_forbidden:", "write_forbidden:",
+    "graph_not_found:", "graph_invalid:", "graph_unavailable:",
+    "node_not_found:", "no_path:", "convert_unavailable:", "convert_failed:",
 )
 _EXPECTED_EXC = (FileNotFoundError, FileExistsError, ValueError, PermissionError, acl.AccessDenied)
 
@@ -227,6 +232,72 @@ def register_tools(mcp, vaults: dict[str, Vault], authors: dict | None = None, l
         """List inline #tags in a vault with occurrence counts."""
         v = _vault(vault, write=False)
         return tagmod.list_tags(v.path)
+
+    # ---- code graph (read-only over <vault>/.graph/<name>.json) ----
+    @tool
+    def list_graphs(vault: str) -> list[dict]:
+        """List the built code graphs available for a vault (under .graph/)."""
+        v = _vault(vault, write=False)
+        return graphmod.list_graphs(v.path)
+
+    @tool
+    def graph_query(vault: str, query: str, name: str = "default", limit: int = 50) -> list[dict]:
+        """Search a built code graph by node id/label; returns matching nodes, highest-degree first."""
+        v = _vault(vault, write=False)
+        return graphmod.query(v.path, name, query, limit=limit)
+
+    @tool
+    def graph_neighbors(vault: str, node_id: str, name: str = "default", depth: int = 1, direction: str = "both") -> dict:
+        """Neighbours of a node up to `depth` hops (direction: in|out|both) - related nodes + edges."""
+        v = _vault(vault, write=False)
+        return graphmod.neighbors(v.path, name, node_id, depth=depth, direction=direction)
+
+    @tool
+    def god_nodes(vault: str, name: str = "default", top_n: int = 10) -> list[dict]:
+        """The most-connected nodes in a code graph (architectural hot-spots)."""
+        v = _vault(vault, write=False)
+        return graphmod.god_nodes(v.path, name, top_n=top_n)
+
+    @tool
+    def graph_shortest_path(vault: str, source: str, target: str, name: str = "default") -> dict:
+        """Shortest path between two nodes in a code graph."""
+        v = _vault(vault, write=False)
+        return graphmod.shortest_path(v.path, name, source, target)
+
+    @tool
+    def graph_stats(vault: str, name: str = "default") -> dict:
+        """Metadata for a built code graph (counts, languages, communities)."""
+        v = _vault(vault, write=False)
+        return graphmod.stats(v.path, name)
+
+    @tool
+    def convert_to_markdown(vault: str, path: str) -> str:
+        """Convert a file (PDF / Office / image / HTML / CSV / ...) in the vault to Markdown text."""
+        v = _vault(vault, write=False)
+        target = v.safe_join(path)  # containment-safe; allows doc types beyond the attachment allowlist
+        if any(part.startswith(".") for part in target.relative_to(v.path).parts):
+            raise PermissionError(f"path_hidden: {path}")
+        if not target.is_file():
+            raise FileNotFoundError(f"not_found: {path}")
+        return convertmod.to_markdown(target)
+
+    # build scans a source tree (outside the vault) - a deliberate local action, so it is
+    # only exposed in local stdio mode where the trust boundary is local filesystem access.
+    if local:
+        @wtool
+        def graph_build(vault: str, source: str, name: str = "default", languages: list[str] | None = None) -> dict:
+            """Build a code/Ansible graph from a source tree and store it at .graph/<name>.json."""
+            v = _vault(vault, write=True)
+            out = graphmod.graph_file(v.path, name, must_exist=False)  # sanitised + vault-contained
+            from .codegraph import build_graph
+            src = Path(source).expanduser().resolve()
+            data = build_graph(src, languages=languages)
+            out.parent.mkdir(exist_ok=True)
+            atomic_write(out, json.dumps(data, ensure_ascii=False))
+            g = data.get("graph", {})
+            return {"vault": vault, "graph": out.stem, "source": str(src),
+                    "nodes": g.get("node_count"), "edges": g.get("edge_count"),
+                    "communities": g.get("communities"), "treesitter": g.get("treesitter_available")}
 
     @tool
     def git_status(vault: str) -> dict:
