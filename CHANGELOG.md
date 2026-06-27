@@ -5,53 +5,13 @@ All notable changes to knowledge-gateway. Consumers track the moving **`stable`*
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
 
-## v0.7.4 - 2026-06-27
+## v0.7.5 - 2026-06-27
 
-### Changed
-- GitHub repo renamed to **`knowledge-gateway`**; all URLs now point to
-  `github.com/fszalaj/knowledge-gateway` (the old `obsidian-gateway` URL redirects, so existing
-  `@stable` configs keep working). First release cut under the `knowledge-gateway` PyPI Trusted
-  Publisher.
+### Distribution
+- Published to PyPI as `knowledge-gateway` (Trusted Publishing), alongside the moving `@stable` git branch.
 
-## v0.7.3 - 2026-06-27
-
-### Fixed
-- Swept the last `obsidian-gateway` references in `gateway/` code: the tempfile-fallback lock-dir
-  name and the fcntl-unavailable warning in `gateway/locks.py`, and the `knowledge-gateway-graph`
-  CLI docstring. `git grep obsidian-gateway -- gateway/**` is now empty (the name survives only in
-  the repo URL, the "formerly" note, and CHANGELOG history).
-
-## v0.7.2 - 2026-06-27
-
-### Fixed
-- Three stray `obsidian-gateway` references missed in the rename (caught by review): the
-  `importlib.metadata.version("obsidian-gateway")` lookup in `gateway/__init__.py` (was silently
-  falling back to the wrong version), the `knowledge-gateway-graph` CLI `prog` name, and the git
-  lock-dir name in `gateway/locks.py`.
-
-## v0.7.1 - 2026-06-27
-
-### Changed
-- **Dropped the obsidian-gateway back-compat aliases** (pre-1.0 dev): removed the `obsidian-gateway`
-  console scripts and renamed the `OBSIDIAN_GATEWAY_*` env vars to `KNOWLEDGE_GATEWAY_*`. The only
-  names now are `knowledge-gateway` (the git repo URL stays `.../obsidian-gateway` until the repo is
-  renamed). Swept the README + deploy units; renamed the `deploy/*.service`/`.timer` unit files.
-
-## v0.7.0 - 2026-06-27
-
-### Changed
-- **Renamed `obsidian-gateway` -> `knowledge-gateway`** - it is no longer just a vault wrapper but a
-  knowledge gateway (vault + code-graph + convert). The distribution, CLI, MCP display name, and
-  `server.json` are now `knowledge-gateway`; the import package stays `gateway`, and the MCP server
-  is still keyed `wiki` in client configs.
-- **Back-compat:** the old `obsidian-gateway` / `obsidian-gateway-graph` console scripts remain as
-  aliases, and `OBSIDIAN_GATEWAY_VAULT`/`_LOCAL` env vars are still read - existing `uvx --from
-  git+...@stable obsidian-gateway` configs keep working during the transition.
-- README repositioned (vault + code-graph + convert), `server.py` instructions list the graph/convert tools.
-
-### PyPI
-- Trusted Publishing must be reconfigured for the new project name: add a pending publisher for
-  `knowledge-gateway` (owner fszalaj, repo knowledge-gateway, workflow release.yml, environment pypi).
+### CI
+- Bumped `actions/checkout` to v7.0.0; refreshed the dev lockfile (pytest).
 
 ## v0.6.0 - 2026-06-27
 
@@ -61,7 +21,7 @@ pinning/audit.
   `include_role`/`import_tasks`/`notify` + `task -> filter plugin` edges), and an optional broad
   tree-sitter pass (JS/TS/Go/Rust/Terraform/bash/PowerShell/...). New read-only MCP tools
   `list_graphs`, `graph_query`, `graph_neighbors`, `god_nodes`, `graph_shortest_path`,
-  `graph_stats`; a local-only `graph_build`; and a `obsidian-gateway-graph` CLI.
+  `graph_stats`; a local-only `graph_build`; and a `knowledge-gateway-graph` CLI.
 - **Document conversion (optional `[convert]`)**: `convert_to_markdown` turns a vault file
   (PDF/Office/image/HTML/...) into Markdown via markitdown.
 
@@ -79,7 +39,7 @@ pinning/audit.
 
 ### Distribution
 - **PyPI Trusted Publishing**: `release.yml` publishes to PyPI on a `vX.Y.Z` tag via OIDC
-  (no token). First PyPI release - consumers can `uvx obsidian-gateway` (alongside `@stable`).
+  (no token). First PyPI release - consumers can `uvx knowledge-gateway` (alongside `@stable`).
 - **MCP Registry**: `server.json` manifest + a `mcp-name` marker in the README, for listing
   in the official MCP Registry.
 
@@ -111,7 +71,7 @@ pinning/audit.
 
 ### Changed
 - The FastMCP server ships an `instructions` prompt describing the tools + Obsidian/git conventions to connecting agents.
-- Reference deploy artifacts for the `@stable` model: `deploy/obsidian-gateway.service` (uv-tool binary) + `deploy/obsidian-gateway-update.{service,timer}` + `deploy/auto-update.sh`.
+- Reference deploy artifacts for the `@stable` model: `deploy/knowledge-gateway.service` (uv-tool binary) + `deploy/knowledge-gateway-update.{service,timer}` + `deploy/auto-update.sh`.
 
 ### Dependencies
 - `ruamel.yaml` allowed up to `<0.20` (lock 0.19.1; Dependabot).
@@ -124,7 +84,7 @@ pinning/audit.
   errors are hidden from the client.
 
 ### Features
-- **`--local` vault auto-detect**: `--local` / `OBSIDIAN_GATEWAY_LOCAL` auto-detects the
+- **`--local` vault auto-detect**: `--local` / `KNOWLEDGE_GATEWAY_LOCAL` auto-detects the
   cwd's vault (cwd-is-vault, `./wiki`, a real `*-obsidian-vault`, a child with `.obsidian/`),
   so one global codex/antigravity MCP config works in any repo. Explicit `--vault` still
   wins; a bare invocation still runs the HTTP server.
@@ -154,7 +114,7 @@ after the old `v0.2.0` tag was removed; pin this release's commit SHA (or a futu
 - Coverage 54% -> 82%; added end-to-end tool tests plus rename / gitops / search / security suites.
 
 ### Planned
-- PyPI Trusted Publishing, so consumers can `uvx obsidian-gateway==<version>` without a git fetch.
+- PyPI Trusted Publishing, so consumers can `uvx knowledge-gateway==<version>` without a git fetch.
 - Server-mode concurrency hardening (per-note locks, path-scoped commits) and error masking.
 
 ## v0.2.0 - removed

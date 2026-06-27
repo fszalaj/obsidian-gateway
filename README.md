@@ -2,10 +2,6 @@
 
 <!-- mcp-name: io.github.fszalaj/knowledge-gateway -->
 
-> Formerly **obsidian-gateway**. Renamed because it is no longer just a vault wrapper - it is a
-> filesystem- and git-native **knowledge gateway** for AI agents. The package, CLI, and MCP
-> display name are now `knowledge-gateway`; the MCP server is still keyed `wiki` in client configs.
-
 A single MCP server that gives agents (Claude Code, Codex, Cursor, Gemini, Copilot, Antigravity)
 three capabilities over one connection:
 

@@ -1,7 +1,7 @@
 [project]
 name = "knowledge-gateway"
-version = "0.7.4"
-description = "Filesystem/git-native FastMCP knowledge gateway: serve an Obsidian vault over MCP, plus optional code-graph and doc-to-markdown tools (formerly obsidian-gateway)"
+version = "0.7.5"
+description = "Filesystem/git-native FastMCP knowledge gateway: serve an Obsidian vault over MCP, plus optional code-graph and doc-to-markdown tools"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Filip Szalaj" }]
