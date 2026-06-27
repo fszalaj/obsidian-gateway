@@ -5,6 +5,14 @@ All notable changes to obsidian-gateway. Consumers track the moving **`stable`**
 next launch (no per-repo re-pin). Every release is also an immutable `vX.Y.Z` tag for
 pinning/audit.
 
+## v0.7.3 - 2026-06-27
+
+### Fixed
+- Swept the last `obsidian-gateway` references in `gateway/` code: the tempfile-fallback lock-dir
+  name and the fcntl-unavailable warning in `gateway/locks.py`, and the `knowledge-gateway-graph`
+  CLI docstring. `git grep obsidian-gateway -- gateway/**` is now empty (the name survives only in
+  the repo URL, the "formerly" note, and CHANGELOG history).
+
 ## v0.7.2 - 2026-06-27
 
 ### Fixed

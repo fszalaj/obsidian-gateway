@@ -35,7 +35,7 @@ def _lockfile(repo_root: Path) -> Path:
         except OSError:
             pass
     h = hashlib.sha256(str(repo_root).encode()).hexdigest()[:16]
-    d = Path(tempfile.gettempdir()) / "obsidian-gateway-locks"
+    d = Path(tempfile.gettempdir()) / "knowledge-gateway-locks"
     d.mkdir(parents=True, exist_ok=True)
     return d / f"{h}.lock"
 
@@ -52,7 +52,7 @@ def write_lock(repo_root: Path):
     proceeds rather than failing.
     """
     if fcntl is None:
-        _warn_once("fcntl unavailable; obsidian-gateway write locking is disabled")
+        _warn_once("fcntl unavailable; knowledge-gateway write locking is disabled")
         yield
         return
     try:

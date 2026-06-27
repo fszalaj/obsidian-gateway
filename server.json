@@ -6,12 +6,12 @@
     "url": "https://github.com/fszalaj/obsidian-gateway",
     "source": "github"
   },
-  "version": "0.7.2",
+  "version": "0.7.3",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "knowledge-gateway",
-      "version": "0.7.2",
+      "version": "0.7.3",
       "transport": { "type": "stdio" },
       "runtimeHint": "uvx"
     }

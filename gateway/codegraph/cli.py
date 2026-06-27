@@ -1,6 +1,6 @@
 """CLI: build a code graph from a source tree into a graph.json.
 
-    obsidian-gateway-graph <source> -o <vault>/.graph/<name>.json [--languages js ts ...]
+    knowledge-gateway-graph <source> -o <vault>/.graph/<name>.json [--languages js ts ...]
 
 Runs where the code is (the source tree may be outside any vault); writes a node-link
 graph.json the gateway then serves read-only. AST-only, no network, no LLM.
